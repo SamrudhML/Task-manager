@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-ui
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-ui
+  template:
+    metadata:
+      labels:
+        app: task-ui
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: ui-files
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: ui-files
+        configMap:
+          name: ui-config
