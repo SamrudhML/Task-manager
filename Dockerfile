@@ -8,7 +8,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o task-api main.go
 
 # Stage 2: Runtime
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /app/task-api .
 EXPOSE 8080
