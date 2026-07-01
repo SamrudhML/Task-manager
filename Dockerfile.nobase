@@ -1,0 +1,4 @@
+FROM scratch
+COPY task-api-linux /task-api
+EXPOSE 8080
+ENTRYPOINT ["/task-api"]

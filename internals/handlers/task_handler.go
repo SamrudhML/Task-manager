@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"task-manager/internals/auth"
 	"task-manager/internals/models"
 	"task-manager/internals/repositories"
 
@@ -19,6 +20,12 @@ func NewTaskHandler(repo *repositories.TaskRepository) *TaskHandler {
 }
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	var req models.CreateTaskRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -30,6 +37,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	task := &models.Task{
+		UserID:      userID,
 		Title:       req.Title,
 		Description: req.Description,
 		Status:      "todo",
@@ -46,7 +54,13 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.Repo.ListTasks(r.Context())
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	tasks, err := h.Repo.ListTasks(r.Context(), userID)
 	if err != nil {
 		http.Error(w, "failed to list tasks", http.StatusInternalServerError)
 		return
@@ -56,8 +70,14 @@ func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
-	task, err := h.Repo.GetTask(r.Context(), id)
+	task, err := h.Repo.GetTask(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, "failed to get task", http.StatusInternalServerError)
 		return
@@ -71,6 +91,12 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
 	var req models.UpdateTaskRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -78,7 +104,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := h.Repo.UpdateTask(r.Context(), id, &req)
+	updated, err := h.Repo.UpdateTask(r.Context(), id, userID, &req)
 	if err != nil {
 		http.Error(w, "failed to update task", http.StatusInternalServerError)
 		return
@@ -92,8 +118,14 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
-	err := h.Repo.DeleteTask(r.Context(), id)
+	err := h.Repo.DeleteTask(r.Context(), id, userID)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			http.Error(w, "task not found", http.StatusNotFound)

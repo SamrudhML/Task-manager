@@ -35,3 +35,8 @@ spec:
             configMapKeyRef:
               name: api-config
               key: MONGO_DB
+        - name: JWT_SECRET
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: JWT_SECRET

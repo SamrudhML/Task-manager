@@ -52,8 +52,8 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task *models.Task) erro
 	return err
 }
 
-func (r *TaskRepository) ListTasks(ctx context.Context) ([]*models.Task, error) {
-	cursor, err := r.collection.Find(ctx, bson.M{})
+func (r *TaskRepository) ListTasks(ctx context.Context, userID string) ([]*models.Task, error) {
+	cursor, err := r.collection.Find(ctx, bson.M{"user_id": userID})
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +75,9 @@ func (r *TaskRepository) ListTasks(ctx context.Context) ([]*models.Task, error) 
 	return tasks, nil
 }
 
-func (r *TaskRepository) GetTask(ctx context.Context, id string) (*models.Task, error) {
+func (r *TaskRepository) GetTask(ctx context.Context, id, userID string) (*models.Task, error) {
 	var task models.Task
-	filter := bson.M{"id": id}
+	filter := bson.M{"id": id, "user_id": userID}
 	if err := r.collection.FindOne(ctx, filter).Decode(&task); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil
@@ -87,7 +87,7 @@ func (r *TaskRepository) GetTask(ctx context.Context, id string) (*models.Task, 
 	return &task, nil
 }
 
-func (r *TaskRepository) UpdateTask(ctx context.Context, id string, updates *models.UpdateTaskRequest) (*models.Task, error) {
+func (r *TaskRepository) UpdateTask(ctx context.Context, id, userID string, updates *models.UpdateTaskRequest) (*models.Task, error) {
 	update := bson.M{"$set": bson.M{"updated_at": time.Now().UTC()}}
 	if updates.Title != nil {
 		update["$set"].(bson.M)["title"] = *updates.Title
@@ -99,7 +99,7 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, id string, updates *mod
 		update["$set"].(bson.M)["status"] = *updates.Status
 	}
 
-	result := r.collection.FindOneAndUpdate(ctx, bson.M{"id": id}, update, options.FindOneAndUpdate().SetReturnDocument(options.After))
+	result := r.collection.FindOneAndUpdate(ctx, bson.M{"id": id, "user_id": userID}, update, options.FindOneAndUpdate().SetReturnDocument(options.After))
 	var task models.Task
 	if err := result.Decode(&task); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -110,8 +110,8 @@ func (r *TaskRepository) UpdateTask(ctx context.Context, id string, updates *mod
 	return &task, nil
 }
 
-func (r *TaskRepository) DeleteTask(ctx context.Context, id string) error {
-	result, err := r.collection.DeleteOne(ctx, bson.M{"id": id})
+func (r *TaskRepository) DeleteTask(ctx context.Context, id, userID string) error {
+	result, err := r.collection.DeleteOne(ctx, bson.M{"id": id, "user_id": userID})
 	if err != nil {
 		return err
 	}
