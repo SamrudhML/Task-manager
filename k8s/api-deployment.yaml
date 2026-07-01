@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: task-api
-        image: task-api:latest
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/samrudhml/task-api:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:
